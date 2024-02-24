@@ -1,0 +1,39 @@
+------------------------- Initialize step -------------------------
+// npm init -y
+// -y give us all the default value for package.json
+// stackoverflow: tells the generator to use the defaults instead of asking questions.
+// generate an empty npm project without going through an interactive process. The -y stands for yes
+
+// npm i --save-dev prisma typescript ts-node @types/node nodemon
+// >> --save-dev: to install our dependencies (in this case development dependencies)
+// >> prisma typescript: we need to have prisma, and prisma is built on top of typescript
+// >> ts-node: give you typescript definition of a node
+// >> @types/node: helping us with our types in node
+// >> nodemon: allows us to refresh server every time we make changes (and saves).
+
+// create a ts config file - contains all typescript configuration
+
+// npx prisma init --datasource-provider postgresql
+// >> npx prisma init: initialize prisma & the schema & migrations
+// >> --datasource-provider: tell what's the database we're using
+// >> postgresql: the database we're using (in this case is postgresql)
+// >> In summary - to initialize some basic files for us and use Postgres by default.
+
+/* This is what the terminal will shows:
+✔ Your Prisma schema was created at prisma/schema.prisma
+  You can now open it in your favorite editor.
+
+Next steps:
+1. Set the DATABASE_URL in the .env file to point to your existing database. If your database has no tables yet, read https://pris.ly/d/getting-started
+2. Run prisma db pull to turn your database schema into a Prisma schema.
+3. Run prisma generate to generate the Prisma Client. You can then start querying your database.
+
+More information in our documentation:
+https://pris.ly/d/getting-started
+*/
+// npx prisma format: to format the schema file for you automatically
+// or you might add this line in settings.json
+    "[prisma]": {
+        "editor.defaultFormatter": "Prisma.prisma",
+        "editor.formatOnSave": true
+    },

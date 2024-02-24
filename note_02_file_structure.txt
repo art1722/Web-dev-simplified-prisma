@@ -1,0 +1,198 @@
+schema.prisma
+
+- the generator is what your code is generating into.
+- You're gonna define a bunch of code for your database in this Prisma format. It's not SQL, it's not NoSQL.
+- in this case provider = "prisma-client-js": what are you going to generate your code into? 
+- In our case, we're generating this prisma-client.js. And this is just the default.
+    We're saying, hey, take all of this Prisma code and convert it using the prisma-client.js formatter, 
+    which is the default generator that we care about 99% of the time.
+
+datasource
+- provide -> where's the data coming from
+- url -> which is defined in environment variable (in .env)
+    and you have to make it YOUR actual url
+    postgresql://postgres:password@localhost:port/whatyoucallthedatabase
+    whatever the database name you use, the database must already exist.
+    postgresql://user:password@host:port/database - from chatgpt
+
+----------------- define your schema ---------------------
+the schema represents all of your data
+and we're gonna define the most basic schema at first, 
+
+e.g. model User {} -> note that every single model inside prisma must have some ID
+id Int @id - type Int, and you define id by putting @id
+
+---------------- Prisma migration basics -------------------------
+Prisma and our database are completely separate
+from one another.
+
+What we need to do is we need to tell Prisma, 
+hey I'm done making changes to my "schema". 
+Can you apply them to my "database"? - to migrate changes
+
+// npx prisma migrate dev --name init
+// >> npx prisma migrate: pushing a migration
+// >> dev: this is for development only
+// >> --name init: to give a name of init
+process: create a new migration file -> to interact with postgres database
+-> now in migrations folder in prisma - we'll have a SQL file that contains migration
+✔ Generated Prisma Client (v5.4.2) to .\node_modules\@prisma\client in 91ms
+-> Essentially we have created a brand new "PrismaClient:. 
+And this client is that thing from the "generator".
+
+---------------- Prisma client basics -------------------------
+We're saying, hey, create me a prisma-client.js whenever I change all my code. 
+And I make changes to my database, such as adding model
+I want you to update my client code automatically, which in this case is the prisma-client
+The client is essentially all of your code for interact with your database
+with typescript - we have type safety blanket
+
+Now unfortunately, we don't actually have a client yet because we haven't installed the client library.
+So we need to do that now. We can type in 
+// npm i @prisma/client
+And this is going to install the client that allows us to generate and use this client.
+when we first install the client from doing this migration, we already have everything generated.
+But if you need to manually regenerate your client, you can type in 
+// npx prisma generate
+it's going to go through all the steps of generating based on whatever provider we want, 
+which is the default one.
+And you can see that now, we can start using our PrismaClient 
+because it automatically generated it for us and stored it in that particular location.
+
+/*
+import { PrismaClient } from '@prisma/client/edge'
+const prisma = new PrismaClient()
+*/
+copy this part into script.ts
+
+Summary: create your schema.prisma
+defines the data source you're using -> the database
+defines generator -> how you go from your schema to typescript code
+defines all of your different models and everything related to your database,
+then create """migration""" to allow you to make changes to your database
+In doing that migration, you're updating your code with this generator 
+(which creates a library for you). this prisma library allows you to interact
+with your code through prisma library
+= you don't have to write raw SQL queries.
+
+---------------- Datasources and Generators -------------------------
+- you can only have one single Datasources
+cause Prisma is directly connecting to your database.
+so you can only have one database that defines your data
+provider: the name of the database you're using
+url: link to that particular database
+
+- use environment variables for storing your database URL
+you can also change the database that you're using
+for development, staging, and production, and so on
+
+- you can have multiple generator e.g. for prisma-client, graphQL api, ...
+There's tons of different npm libraries out there for different generators
+
+---------------- Model Fields ------------------------- 
+- is the different tables inside your database
+model -: fields
+- each model is composed of a bunch of different fields (each row id, name, ... is a field)
+
+>>> name type (a field type modifier) (attributes)
+- field type modifier e.g. ? in String? means optional, 
+    [] there could be multiple of this thing
+- attributes starts with @
+
+Field types
+- String 
+- Boolean
+- BigInt(super large num) Int
+- Float(e.g. rating, for most use cases, more general floating point number) 
+    Decimal(can represents a wider range of floating point numbers 
+        - if you want to be super accurate)
+- DateTime(represents a timestamp, like a date and a time)
+    is the only time-based type you can used in prisma
+- Bytes: if you store file data / really big data needed to convert down
+    to just raw byte information
+    not important that much
+- Unsupported("")
+    Prisma allows you to actually take a database that already exists 
+    and convert it to a schema file.
+    since Prisma doesn't support every single type of data type in the entire world, 
+    there are going to be some that are unsupported.
+    it'll list them as unsupported. If you """take an existing database, 
+    convert it to Prisma, and it does not support that data type."""
+- data that represents another obj like e.g. field: author User - and you already have model User
+others: e.g. - Json (not all databases support the JSON data type but postgres does)
+
+---------------- Model Relationships ------------------------- 
+To define the type of relationship data
+Types of main relationship
+- one-to-many e.g. post <-> author 
+    (one post has only one author, one author can have many posts)
+- many-to-many e.g. post <-> category
+    (one post could have a category, a category could have many posts
+    , each post has many categories, so many categories have many posts)
+- one-to-one e.g. user <-> table of preferences
+    (each user has one reference in that preference table,
+    each preference has one user at links to)
+
+ONE TO MANY Relationships
+e.g. in model User {id Int 
+                    author User @relation(fileds: [userId], references: [id])}
+    in model Post { posts Post[] 
+                    userId Int}
+
+>> fields: to say what field inside of our post table
+is referencing to the ID inside of our user table
+    (fileds: [userId], referneces: [id])
+    So we're saying that the user ID field in our post references the ID field in our user, 
+    and those two should be the same. 
+    if userId == id -> they are linked together
+    like a foreign key relationship if you're familiar with SQL.
+
+@default(autoincrementing()) <Int> -> @default(uuid()) <and change to String type>
+    uuid is a bit more common
+    as it's more secure - people can't just change the ID from one to two & access new information
+    uuid are completely random & unique
+
+TWO REFERENCES TO THE SAME TABLE
+for example two references to a post - to disambiguated it
+-> give a name to the first property in this relationship function (@relation())
+    this is a label, and a label can be shared with all other field (in other model)
+
+MANY TO MANY Relationships
+
+ONE TO ONE Relationships
+
+------------------------- Model Attributes ------------------------- 
+what we've talked: @relation() @id @default()
+@unique - e.g. email String @unique -> every single email is going to be unique
+@updateAt - e.g. model Post { updatedAt DateTime @updatedAt }
+    every time we update this post,
+    it's going to automatically set this updatedAt field, 
+    whatever we specify updatedAt as the current timestamp.
+    so we don't have to manually keeping track of updated time.
+    e.g. createdAt DateTime @default(now()) - to default to the current timestamp
+
+BLOCK LEVEL ATTRIBUTES vs field level attributes
+- a field level attributes applies to the field, one @, in the same row as our field
+- block level attributes goes inside of the whole curly braces {}
+    on its own line completely
+    have two @@
+>> e.g. @@unique(["age", "name"]) - specify uniqueness constraint on age and name
+    so we can't have user with BOTH the same name and the same age (e.g. same name diff age is ok)
+    you can remove ""
+    @@unique([age, name])
+>> e.g. @@index([email]) - so we have email index
+    to help with sorting and performance (like if you want to query on email)
+>> e.g. @@index([email, name]) and we can also index on email and name
+>> e.g. @@id([title, authorId]) to create a composite id - an id that contains two different things
+    if this is in model Post ->
+    our title and authorId represents our Id for the post
+
+------------------------- Enums ------------------------- 
+e.g. to define if user is admin or not
+enum Role {
+    BASIC
+    EDITOR
+    ADMIN
+}
+-> in model User { role Role @default(BASIC) }
+useful if a field has only a few set of values that it can be

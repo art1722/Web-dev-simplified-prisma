@@ -1,0 +1,153 @@
+------------------------- Client Create Operations -------------------------
+const prisma = new PrismaClient()
+this new PrismaClient manage all different connections for you
+so you use only one instance of PrismaClient - Don't create a bunch of them
+otherwise your database might be bogged down with too many connections
+
+NOTE: click ctrl + space to find an option to fill each field in data
+when using prisma.user.create()
+
+With Prisma, we can actually do all that nested creation all in one create function.
+
+inside prisma.user.create()
+using "include" parameter to include different references inside here (the result to be shown
+    e.g. if you do console.log(user))
+    we can also replace the include with "select"
+Note that you can' tdo both select and include at the same time
+
+inside prisma.user.createMany([]) - pass in an array of data instead
+you can't use select clause though
+if console log will display something like { count: 2 } - number of users created
+
+------------------------- Client Read Operations -------------------------
+
+prisma.user.findUnique({ where: {...} })
+instead of find query
+find things based on "unique" keys based on database e.g. find uniqueId
+... -> (must be tagged @unique or @@unique(A, B,...) -> find by A_B : { A = ..., B = ...})
+- where
+return only one single user
+
+prisma.user.findFirst()
+to find the first thing that matches a query
+(for any property - don't have to have that @ or @@ unique kind of thing)
+- where
+- distinct e.g. distince ["name"] if many data pass the where constraint
+    and return the same name, get the first data with that name
+    e.g. distince["name", "age"] return every data with distinct BOTH name and age (cosidered together as a pack)
+- pagination:
+    take: 2
+    determines how many you want to return
+    skip: 1
+    skip the first user, and if combined with take: 2 - getting the next 2 data
+- orderBy: { age: "asc" or "desc" } getting data in order by age
+
+  
+prisma.user.findMany()
+find many user that matches
+return as an array of data matched
+
+------------------------- Advanced filtering -------------------------
+Under const user = await prisma.user.findMany({...}) wec can have the following filter
+
+- equals: where: { name: { equals: "Sally" }, } == where: { name: "Sally" }
+- not: where: { name: { not: "Sally" }, }
+- in: where: { in: ["Sally, "Kyle] }, 
+- notIn: where: { notIn: ["Sally, "Kyle] }, 
+- lt: where: { age: { lt: 20 }, }, is less than
+- lte less than or equal to
+- gt: where: { age: { gt: 20 }, }, is greater than
+- gte greater than or equal to
+- contains: where: { email: { contains: "@test.com" }, },
+    check if the text is contained in another text
+- startsWith: where: { email: { startsWith: "kyle" }, },
+- endswith: where: { email: { endsWith: "@test.com" }, },
+    see if the string is at the end
+
+combine basic types of queries with AND OR NOT : [] 
+    *** notice that they are followed by an array []
+    *** NOT can be followed by single {}
+- AND: [{ email: { startsWith: "sally" }}, { email: { endsWith: "@test1.com" } }, ],
+use e.g. if you want to do a query on email multiple times
+- note that NOT queries will negate everything inside of the array
+
+- .length: console.log(user.length) number of user found
+
+------------------------- Relationship filtering -------------------------
+- where: { userPreference: { emailUpdates: true, }, },
+    get all the user with uerPreference of emailUpdates true
+
+- query on something more than just one-to-one query
+use of every, none, some
+e.g. in model User {} we have writtenPosts Post[] @relation("WrittenPosts") so we can do this
+    where: { writtenPosts: { every: { title: "Test" }}}
+    every single posts that this person writes starts with the title Test?
+    if so -> return that user
+    (for example, if none of our user has any posts yes, then it will return all of them)
+NOTE: if you use some - and none of the user has any posts yet - it will return nothing
+
+- you can do all of these queries nested as many levels deep as you want to
+
+- is, isNot
+e.g. prisma.post.findMany({...}) 
+    where: { author: { is: { age: 27, }, isNot: ... }}
+    give me all the post where the author has an age of 27.
+
+------------------------- Client update operations -------------------------
+- update(...)
+, updateMany(...) to update all the users that match a specific query
+    where: { email: "sally@test1.com" },
+    data: { email: "sally@test.com" }, -> the data we want to update
+    include? - ONLY in update and not updateMany (same concept as createMany findMany) 
+        - we can pass in include - as with all other queries
+    select? - ONLY in update and not updateMany (same concept as createMany findMany) 
+        - same as include
+
+update has a few fancy operation when it comes to age
+- increment decrement multiply divide (for any number)
+e.g. prisma.user.update({
+    where: { email: "kyle@test.com", }, data: { age: { increment: 1, }, },
+})
+
+------------------------- Cnnect existing relationships -------------------------
+add & connect different relationships to a user by updating them
+- connect disconnect
+e.g. if I already had a user preference created, but I want to updated them
+to connect user's userPreferences with specific id 
+const user = await prisma.user.update({
+    where: { email: "kyle@test.com", },
+    data: { userPreference: { connect: { id: "your specific id", }, }, },
+})
+-> after this and doing this
+const user = await prisma.user.findFirst({
+    where: { name: "Kyle", },
+    include: { userPreference: true },
+})
+console.log(user) >> user will have that new userPreference, with emailUpdate true
+In summary: using the connect to connect already existing objects
+
+- we can also do disconnect to remove existing objects
+const user = await prisma.user.update({
+    where: { email: "kyle@test.com", },
+    data: { userPreference: { disconnect: true, }, },
+})
+this is a one to one relationship
+after typing disconnect to true  - will auto disconnect this user 
+if console.log() -> userPreferenceId will be set to null
+
+- this ability to connect and disconnect is available in create as well 
+    e.g. prisma.user.create
+
+------------------------- Client delete operations -------------------------
+- delete e.g. await prisma.user.delete({ where: { email: "kyle@test.com",},},)
+delete only deletes one user
+field inside the "where" must be a unique field
+return user that just got deleted
+
+- deleteMany - the same thing as delete
+    await prisma.user.deleteMany({ where: { age: { gt: 20 },},})
+    return count number of user deleted e.g. { count: 1 } 
+
+- await prisma.user.deleteMany() -> to delete all the users in the database
+
+
